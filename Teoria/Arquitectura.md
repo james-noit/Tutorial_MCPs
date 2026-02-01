@@ -22,6 +22,7 @@ El Model Context Protocol incluye los siguientes proyectos:
   cómo las aplicaciones de IA usan los LLMs ni cómo gestionan el contexto proporcionado.
 </Note>
 
+
 ## Conceptos de MCP
 
 ### Participantes
@@ -92,13 +93,13 @@ La capa de transporte abstrae los detalles de comunicación de la capa de protoc
 
 ### Protocolo de la capa de datos
 
-Una parte central de MCP es definir el esquema y la semántica entre clientes MCP y servidores MCP. Los desarrolladores probablemente encontrarán la capa de datos —en particular, el conjunto de [primitivos](#primitives)— como la parte más interesante de MCP. Es la porción del protocolo que define las maneras en que los desarrolladores pueden compartir contexto desde servidores MCP hacia clientes MCP.
+Una parte central de MCP es definir el esquema y la semántica entre clientes MCP y servidores MCP. Los desarrolladores probablemente encontrarán la capa de datos —en particular, el conjunto de [primitivos](#primitivos)— como la parte más interesante de MCP. Es la porción del protocolo que define las maneras en que los desarrolladores pueden compartir contexto desde servidores MCP hacia clientes MCP.
 
 MCP utiliza [JSON‑RPC 2.0](https://www.jsonrpc.org/) como su protocolo RPC subyacente. Clientes y servidores intercambian solicitudes y respuestas entre sí. Se pueden usar notificaciones cuando no se requiere respuesta.
 
 #### Gestión del ciclo de vida
 
-MCP es un <Tooltip tip="A subset of MCP can be made stateless using the Streamable HTTP transport">protocolo con estado</Tooltip> que requiere gestión del ciclo de vida. El propósito de esta gestión es negociar las <Tooltip tip="Features and operations that a client or server supports, such as tools, resources, or prompts">capacidades</Tooltip> que tanto el cliente como el servidor soportan. Información detallada está disponible en la [especificación](/specification/latest/basic/lifecycle), y el [ejemplo](#example) muestra la secuencia de inicialización.
+  MCP es un <span title="A subset of MCP can be made stateless using the Streamable HTTP transport">protocolo con estado</span> que requiere gestión del ciclo de vida. El propósito de esta gestión es negociar las <span title="Features and operations that a client or server supports, such as tools, resources, or prompts">capacidades</span> que tanto el cliente como el servidor soportan. Información detallada está disponible en la [especificación](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle), y el [ejemplo](#ejemplo) muestra la secuencia de inicialización.
 
 #### Primitivos
 
@@ -139,100 +140,101 @@ El protocolo admite notificaciones en tiempo real para habilitar actualizaciones
 
 Esta sección ofrece un recorrido paso a paso de una interacción cliente‑servidor MCP, centrada en el protocolo de la capa de datos. Demostraremos la secuencia de ciclo de vida, las operaciones con herramientas y las notificaciones usando mensajes JSON‑RPC 2.0.
 
-<Steps>
-  <Step title="Inicialización (Gestión del ciclo de vida)">
-    MCP comienza con la gestión del ciclo de vida mediante un intercambio de negociación de capacidades. Como se describe en la sección de [gestión del ciclo de vida](#lifecycle-management), el cliente envía una solicitud `initialize` para establecer la conexión y negociar las funciones soportadas.
+  <details><summary>Inicialización (Gestión del ciclo de vida)</summary>
+MCP comienza con la gestión del ciclo de vida mediante un intercambio de negociación de capacidades. Como se describe en la sección de [gestión del ciclo de vida](#gestión-del-ciclo-de-vida), el cliente envía una solicitud `initialize` para establecer la conexión y negociar las funciones soportadas.
 
-    <CodeGroup>
-      ```json Initialize Request theme={null}
-      {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "initialize",
-        "params": {
-          "protocolVersion": "2025-06-18",
-          "capabilities": {
-            "elicitation": {}
-          },
-          "clientInfo": {
-            "name": "example-client",
-            "version": "1.0.0"
-          }
-        }
-      }
-      ```
-
-      ```json Initialize Response theme={null}
-      {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "result": {
-          "protocolVersion": "2025-06-18",
-          "capabilities": {
-            "tools": {
-              "listChanged": true
-            },
-            "resources": {}
-          },
-          "serverInfo": {
-            "name": "example-server",
-            "version": "1.0.0"
-          }
-        }
-      }
-      ```
-    </CodeGroup>
-
-    #### Entendiendo el intercambio de inicialización
-
-    El proceso de inicialización es una parte clave de la gestión del ciclo de vida de MCP y cumple varios propósitos críticos:
-
-    1. **Negociación de versión del protocolo**: El campo `protocolVersion` (p. ej., "2025-06-18") garantiza que tanto el cliente como el servidor usen versiones del protocolo compatibles. Esto evita errores de comunicación que podrían ocurrir si versiones incompatibles intentan interactuar. Si no se negocia una versión mutuamente compatible, la conexión debe cerrarse.
-
-    2. **Descubrimiento de capacidades**: El objeto `capabilities` permite a cada parte declarar las funciones que soporta, incluyendo qué [primitivos](#primitives) puede manejar (tools, resources, prompts) y si soporta características como [notificaciones](#notifications). Esto permite una comunicación eficiente al evitar operaciones no soportadas.
-
-    3. **Intercambio de identidad**: Los objetos `clientInfo` y `serverInfo` proporcionan información de identificación y versionado para depuración y compatibilidad.
-
-    En este ejemplo, la negociación de capacidades demuestra cómo se declaran los primitivos MCP:
-
-    **Capacidades del cliente**:
-
-    * `"elicitation": {}` - El cliente declara que puede manejar solicitudes de interacción con el usuario (puede recibir llamadas al método `elicitation/create`)
-
-    **Capacidades del servidor**:
-
-    * `"tools": {"listChanged": true}` - El servidor soporta el primitivo de herramientas Y puede enviar notificaciones `tools/list_changed` cuando su lista de herramientas cambie
-    * `"resources": {}` - El servidor también soporta el primitivo de recursos (puede manejar `resources/list` y `resources/read`)
-
-    Tras una inicialización exitosa, el cliente envía una notificación para indicar que está listo:
-
-    ```json Notification theme={null}
-    {
-      "jsonrpc": "2.0",
-      "method": "notifications/initialized"
+**Initialize Request**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "elicitation": {}
+    },
+    "clientInfo": {
+      "name": "example-client",
+      "version": "1.0.0"
     }
-    ```
+  }
+}
+```
 
-    #### Cómo funciona esto en aplicaciones de IA
+**Initialize Response**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+      "tools": {
+        "listChanged": true
+      },
+      "resources": {}
+    },
+    "serverInfo": {
+      "name": "example-server",
+      "version": "1.0.0"
+    }
+  }
+}
+```
 
-    Durante la inicialización, el gestor de clientes MCP de la aplicación de IA establece conexiones con los servidores configurados y almacena sus capacidades para uso posterior. La aplicación usa esta información para determinar qué servidores pueden proporcionar tipos específicos de funcionalidad (tools, resources, prompts) y si admiten actualizaciones en tiempo real.
+#### Entendiendo el intercambio de inicialización
 
-    ```python Pseudo-code for AI application initialization theme={null}
-    # Pseudo Code
-    async with stdio_client(server_config) as (read, write):
-        async with ClientSession(read, write) as session:
-            init_response = await session.initialize()
-            if init_response.capabilities.tools:
-                app.register_mcp_server(session, supports_tools=True)
-            app.set_server_ready(session)
-    ```
-  </Step>
+El proceso de inicialización es una parte clave de la gestión del ciclo de vida de MCP y cumple varios propósitos críticos:
 
-  <Step title="Descubrimiento de herramientas (Primitivos)">
+1. **Negociación de versión del protocolo**: El campo `protocolVersion` (p. ej., "2025-06-18") garantiza que tanto el cliente como el servidor usen versiones del protocolo compatibles. Esto evita errores de comunicación que podrían ocurrir si versiones incompatibles intentan interactuar. Si no se negocia una versión mutuamente compatible, la conexión debe cerrarse.
+
+2. **Descubrimiento de capacidades**: El objeto `capabilities` permite a cada parte declarar las funciones que soporta, incluyendo qué [primitivos](#primitives) puede manejar (tools, resources, prompts) y si soporta características como [notificaciones](#notifications). Esto permite una comunicación eficiente al evitar operaciones no soportadas.
+
+3. **Intercambio de identidad**: Los objetos `clientInfo` y `serverInfo` proporcionan información de identificación y versionado para depuración y compatibilidad.
+
+En este ejemplo, la negociación de capacidades demuestra cómo se declaran los primitivos MCP:
+
+  **Capacidades del cliente**:
+
+  * `"elicitation": {}` - El cliente declara que puede manejar solicitudes de interacción con el usuario (puede recibir llamadas al método `elicitation/create`)
+
+  **Capacidades del servidor**:
+
+  * `"tools": {"listChanged": true}` - El servidor soporta el primitivo de herramientas Y puede enviar notificaciones `tools/list_changed` cuando su lista de herramientas cambie
+  * `"resources": {}` - El servidor también soporta el primitivo de recursos (puede manejar `resources/list` y `resources/read`)
+
+  Tras una inicialización exitosa, el cliente envía una notificación para indicar que está listo:
+
+  **Notification**
+  ```json
+  {
+    "jsonrpc": "2.0",
+    "method": "notifications/initialized"
+  }
+  ```
+
+  #### Cómo funciona esto en aplicaciones de IA
+
+  Durante la inicialización, el gestor de clientes MCP de la aplicación de IA establece conexiones con los servidores configurados y almacena sus capacidades para uso posterior. La aplicación usa esta información para determinar qué servidores pueden proporcionar tipos específicos de funcionalidad (tools, resources, prompts) y si admiten actualizaciones en tiempo real.
+
+  **Pseudo-code for AI application initialization**
+  ```python
+  # Pseudo Code
+  async with stdio_client(server_config) as (read, write):
+      async with ClientSession(read, write) as session:
+          init_response = await session.initialize()
+          if init_response.capabilities.tools:
+              app.register_mcp_server(session, supports_tools=True)
+          app.set_server_ready(session)
+  ```
+  </details>
+
+  <details><summary>Descubrimiento de herramientas (Primitivos)</summary>
     Una vez establecida la conexión, el cliente puede descubrir las herramientas disponibles enviando una solicitud `tools/list`. Esta solicitud es fundamental para el mecanismo de descubrimiento de herramientas de MCP: permite a los clientes entender qué herramientas ofrece el servidor antes de intentar usarlas.
 
-    <CodeGroup>
-      ```json Tools List Request theme={null}
+    **Tools List Request**
+    ```json
       {
         "jsonrpc": "2.0",
         "id": 2,
@@ -240,7 +242,8 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
       }
       ```
 
-      ```json Tools List Response theme={null}
+      **Tools List Response**
+      ```json
       {
         "jsonrpc": "2.0",
         "id": 2,
@@ -286,7 +289,6 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
         }
       }
       ```
-    </CodeGroup>
 
     #### Entendiendo la solicitud de descubrimiento de herramientas
 
@@ -307,25 +309,26 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
 
     La aplicación de IA recupera las herramientas disponibles de todos los servidores MCP conectados y las combina en un registro unificado de herramientas que el modelo de lenguaje puede consultar. Esto permite al LLM entender qué acciones puede ejecutar y generar automáticamente las llamadas a herramientas apropiadas durante las conversaciones.
 
-    ```python Pseudo-code for AI application tool discovery theme={null}
-    # Pseudo-code using MCP Python SDK patterns
+    **Pseudo-code for AI application tool discovery**
+    ```python
+  # Pseudo-code using MCP Python SDK patterns
     available_tools = []
     for session in app.mcp_server_sessions():
         tools_response = await session.list_tools()
         available_tools.extend(tools_response.tools)
     conversation.register_available_tools(available_tools)
     ```
-  </Step>
+  </details>
 
-  <Step title="Ejecución de herramientas (Primitivos)">
+  <details><summary>Ejecución de herramientas (Primitivos)</summary>
     El cliente ahora puede ejecutar una herramienta usando el método `tools/call`. Esto muestra cómo se utilizan los primitivos MCP en la práctica: después de descubrir las herramientas, el cliente puede invocarlas con los argumentos adecuados.
 
     #### Entendiendo la solicitud de ejecución de herramienta
 
     La solicitud `tools/call` sigue un formato estructurado que asegura seguridad de tipos y comunicación clara entre cliente y servidor. Observa que usamos el nombre exacto de la herramienta desde la respuesta de descubrimiento (`weather_current`) en lugar de un nombre simplificado:
 
-    <CodeGroup>
-      ```json Tool Call Request theme={null}
+      **Tool Call Request**
+      ```json
       {
         "jsonrpc": "2.0",
         "id": 3,
@@ -340,7 +343,10 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
       }
       ```
 
-      ```json Tool Call Response theme={null}
+      ```
+
+      **Tool Call Response**
+      ```json
       {
         "jsonrpc": "2.0",
         "id": 3,
@@ -354,7 +360,6 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
         }
       }
       ```
-    </CodeGroup>
 
     #### Elementos clave de la ejecución de herramienta
 
@@ -384,23 +389,25 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
 
     Cuando el modelo de lenguaje decide usar una herramienta durante una conversación, la aplicación de IA intercepta la llamada a la herramienta, la enruta al servidor MCP correspondiente, la ejecuta y devuelve los resultados al LLM como parte del flujo de la conversación. Esto permite al LLM acceder a datos en tiempo real y realizar acciones en el mundo externo.
 
-    ```python  theme={null}
+    **Pseudo-code for AI application tool execution**
+    ```python
     # Pseudo-code for AI application tool execution
     async def handle_tool_call(conversation, tool_name, arguments):
         session = app.find_mcp_session_for_tool(tool_name)
         result = await session.call_tool(tool_name, arguments)
         conversation.add_tool_result(result.content)
     ```
-  </Step>
+  </details>
 
-  <Step title="Actualizaciones en tiempo real (Notificaciones)">
+  <details><summary>Actualizaciones en tiempo real (Notificaciones)</summary>
     MCP soporta notificaciones en tiempo real que permiten a los servidores informar a los clientes sobre cambios sin que estos lo soliciten explícitamente. Esto demuestra el sistema de notificaciones, una característica clave que mantiene las conexiones MCP sincronizadas y receptivas.
 
     #### Entendiendo las notificaciones de cambio en la lista de herramientas
 
     Cuando cambian las herramientas disponibles en el servidor —por ejemplo, cuando hay nueva funcionalidad disponible, se modifican herramientas existentes o algunas herramientas dejan de estar disponibles temporalmente— el servidor puede notificar proactivamente a los clientes conectados:
 
-    ```json Request theme={null}
+    **Request**
+    ```json
     {
       "jsonrpc": "2.0",
       "method": "notifications/tools/list_changed"
@@ -419,7 +426,8 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
 
     Al recibir esta notificación, el cliente normalmente reacciona solicitando la lista de herramientas actualizada. Esto crea un ciclo de actualización que mantiene la visión del cliente sobre las herramientas disponible al día:
 
-    ```json Request theme={null}
+    **Request**
+    ```json
     {
       "jsonrpc": "2.0",
       "id": 4,
@@ -442,13 +450,13 @@ Esta sección ofrece un recorrido paso a paso de una interacción cliente‑serv
 
     Cuando la aplicación de IA recibe una notificación sobre herramientas cambiadas, refresca inmediatamente su registro de herramientas y actualiza las capacidades disponibles para el LLM. Esto garantiza que las conversaciones en curso siempre tengan acceso al conjunto más reciente de herramientas y que el LLM pueda adaptarse dinámicamente a nuevas funcionalidades cuando estén disponibles.
 
-    ```python  theme={null}
-    # Pseudo-code for AI application notification handling
+    **Pseudo-code for AI application notification handling**
+    ```python
+# Pseudo-code for AI application notification handling
     async def handle_tools_changed_notification(session):
         tools_response = await session.list_tools()
         app.update_available_tools(session, tools_response.tools)
         if app.conversation.is_active():
             app.conversation.notify_llm_of_new_capabilities()
     ```
-  </Step>
-</Steps>
+  </details>
