@@ -140,10 +140,10 @@ El protocolo admite notificaciones en tiempo real para habilitar actualizaciones
 
 Esta sección ofrece un recorrido paso a paso de una interacción cliente‑servidor MCP, centrada en el protocolo de la capa de datos. Demostraremos la secuencia de ciclo de vida, las operaciones con herramientas y las notificaciones usando mensajes JSON‑RPC 2.0.
 
-  <details><summary>Inicialización (Gestión del ciclo de vida)</summary>
+#### Inicialización (Gestión del ciclo de vida)</summary>
 MCP comienza con la gestión del ciclo de vida mediante un intercambio de negociación de capacidades. Como se describe en la sección de [gestión del ciclo de vida](#gestión-del-ciclo-de-vida), el cliente envía una solicitud `initialize` para establecer la conexión y negociar las funciones soportadas.
 
-**Initialize Request**
+##### Solicitud de inicialización
 ```json
 {
   "jsonrpc": "2.0",
@@ -162,7 +162,7 @@ MCP comienza con la gestión del ciclo de vida mediante un intercambio de negoci
 }
 ```
 
-**Initialize Response**
+##### Solicitud de respuesta
 ```json
 {
   "jsonrpc": "2.0",
@@ -183,30 +183,31 @@ MCP comienza con la gestión del ciclo de vida mediante un intercambio de negoci
 }
 ```
 
-#### Entendiendo el intercambio de inicialización
+##### Entendiendo el intercambio de inicialización
 
 El proceso de inicialización es una parte clave de la gestión del ciclo de vida de MCP y cumple varios propósitos críticos:
 
 1. **Negociación de versión del protocolo**: El campo `protocolVersion` (p. ej., "2025-06-18") garantiza que tanto el cliente como el servidor usen versiones del protocolo compatibles. Esto evita errores de comunicación que podrían ocurrir si versiones incompatibles intentan interactuar. Si no se negocia una versión mutuamente compatible, la conexión debe cerrarse.
 
-2. **Descubrimiento de capacidades**: El objeto `capabilities` permite a cada parte declarar las funciones que soporta, incluyendo qué [primitivos](#primitives) puede manejar (tools, resources, prompts) y si soporta características como [notificaciones](#notifications). Esto permite una comunicación eficiente al evitar operaciones no soportadas.
+2. **Descubrimiento de capacidades**: El objeto `capabilities` permite a cada parte declarar las funciones que soporta, incluyendo qué [primitivos](#primitivos) puede manejar (tools, resources, prompts) y si soporta características como [notificaciones](#notificaciones). Esto permite una comunicación eficiente al evitar operaciones no soportadas.
 
 3. **Intercambio de identidad**: Los objetos `clientInfo` y `serverInfo` proporcionan información de identificación y versionado para depuración y compatibilidad.
 
 En este ejemplo, la negociación de capacidades demuestra cómo se declaran los primitivos MCP:
 
-  **Capacidades del cliente**:
+##### Capacidades del cliente
 
-  * `"elicitation": {}` - El cliente declara que puede manejar solicitudes de interacción con el usuario (puede recibir llamadas al método `elicitation/create`)
+* `"elicitation": {}` - El cliente declara que puede manejar solicitudes de interacción con el usuario (puede recibir llamadas al método `elicitation/create`)
 
-  **Capacidades del servidor**:
+##### Capacidades del servidor
 
-  * `"tools": {"listChanged": true}` - El servidor soporta el primitivo de herramientas Y puede enviar notificaciones `tools/list_changed` cuando su lista de herramientas cambie
-  * `"resources": {}` - El servidor también soporta el primitivo de recursos (puede manejar `resources/list` y `resources/read`)
+* `"tools": {"listChanged": true}` - El servidor soporta el primitivo de herramientas Y puede enviar notificaciones `tools/list_changed` cuando su lista de herramientas cambie
+* `"resources": {}` - El servidor también soporta el primitivo de recursos (puede manejar `resources/list` y `resources/read`)
 
   Tras una inicialización exitosa, el cliente envía una notificación para indicar que está listo:
 
-  **Notification**
+##### Notification
+
   ```json
   {
     "jsonrpc": "2.0",
@@ -214,11 +215,12 @@ En este ejemplo, la negociación de capacidades demuestra cómo se declaran los 
   }
   ```
 
-  #### Cómo funciona esto en aplicaciones de IA
+##### Cómo funciona esto en aplicaciones de IA
 
   Durante la inicialización, el gestor de clientes MCP de la aplicación de IA establece conexiones con los servidores configurados y almacena sus capacidades para uso posterior. La aplicación usa esta información para determinar qué servidores pueden proporcionar tipos específicos de funcionalidad (tools, resources, prompts) y si admiten actualizaciones en tiempo real.
 
-  **Pseudo-code for AI application initialization**
+##### Pseudo-code for AI application initialization
+
   ```python
   # Pseudo Code
   async with stdio_client(server_config) as (read, write):
@@ -228,86 +230,88 @@ En este ejemplo, la negociación de capacidades demuestra cómo se declaran los 
               app.register_mcp_server(session, supports_tools=True)
           app.set_server_ready(session)
   ```
-  </details>
 
-  <details><summary>Descubrimiento de herramientas (Primitivos)</summary>
-    Una vez establecida la conexión, el cliente puede descubrir las herramientas disponibles enviando una solicitud `tools/list`. Esta solicitud es fundamental para el mecanismo de descubrimiento de herramientas de MCP: permite a los clientes entender qué herramientas ofrece el servidor antes de intentar usarlas.
+#### Descubrimiento de herramientas (Primitivos)
 
-    **Tools List Request**
-    ```json
+Una vez establecida la conexión, el cliente puede descubrir las herramientas disponibles enviando una solicitud `tools/list`. Esta solicitud es fundamental para el mecanismo de descubrimiento de herramientas de MCP: permite a los clientes entender qué herramientas ofrece el servidor antes de intentar usarlas.
+
+##### Solicitud de lista de "tools" (herramientas)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list"
+}
+```
+
+#### Entendiendo la solicitud de descubrimiento de herramientas
+
+La solicitud `tools/list` es simple y no contiene parámetros.
+
+##### Respuesta de lista de "tools" (herramientas)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
       {
-        "jsonrpc": "2.0",
-        "id": 2,
-        "method": "tools/list"
-      }
-      ```
-
-      **Tools List Response**
-      ```json
-      {
-        "jsonrpc": "2.0",
-        "id": 2,
-        "result": {
-          "tools": [
-            {
-              "name": "calculator_arithmetic",
-              "title": "Calculator",
-              "description": "Perform mathematical calculations including basic arithmetic, trigonometric functions, and algebraic operations",
-              "inputSchema": {
-                "type": "object",
-                "properties": {
-                  "expression": {
-                    "type": "string",
-                    "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'sin(30)', 'sqrt(16)')"
-                  }
-                },
-                "required": ["expression"]
-              }
-            },
-            {
-              "name": "weather_current",
-              "title": "Weather Information",
-              "description": "Get current weather information for any location worldwide",
-              "inputSchema": {
-                "type": "object",
-                "properties": {
-                  "location": {
-                    "type": "string",
-                    "description": "City name, address, or coordinates (latitude,longitude)"
-                  },
-                  "units": {
-                    "type": "string",
-                    "enum": ["metric", "imperial", "kelvin"],
-                    "description": "Temperature units to use in response",
-                    "default": "metric"
-                  }
-                },
-                "required": ["location"]
-              }
+        "name": "calculator_arithmetic",
+        "title": "Calculator",
+        "description": "Perform mathematical calculations including basic arithmetic, trigonometric functions, and algebraic operations",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string",
+              "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', 'sin(30)', 'sqrt(16)')"
             }
-          ]
+          },
+          "required": ["expression"]
+        }
+      },
+      {
+        "name": "weather_current",
+        "title": "Weather Information",
+        "description": "Get current weather information for any location worldwide",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "City name, address, or coordinates (latitude,longitude)"
+            },
+            "units": {
+              "type": "string",
+              "enum": ["metric", "imperial", "kelvin"],
+              "description": "Temperature units to use in response",
+              "default": "metric"
+            }
+          },
+          "required": ["location"]
         }
       }
-      ```
+    ]
+  }
+}
+```
 
-    #### Entendiendo la solicitud de descubrimiento de herramientas
+#### Entendiendo la respuesta de descubrimiento de herramientas
 
-    La solicitud `tools/list` es simple y no contiene parámetros.
+La respuesta contiene un arreglo `tools` que ofrece metadatos completos sobre cada herramienta disponible. Esta estructura basada en arreglos permite que los servidores expongan múltiples herramientas simultáneamente manteniendo límites claros entre funcionalidades.
 
-    #### Entendiendo la respuesta de descubrimiento de herramientas
+Cada objeto de herramienta en la respuesta incluye varios campos clave:
 
-    La respuesta contiene un arreglo `tools` que ofrece metadatos completos sobre cada herramienta disponible. Esta estructura basada en arreglos permite que los servidores expongan múltiples herramientas simultáneamente manteniendo límites claros entre funcionalidades.
+* **`name`**: Un identificador único para la herramienta dentro del espacio de nombres del servidor. Sirve como clave primaria para la ejecución de la herramienta y debería seguir un patrón de nombres claro (p. ej., `calculator_arithmetic` en lugar de solo `calculate`)
+* **`title`**: Un nombre legible por humanos que los clientes pueden mostrar a los usuarios
+* **`description`**: Explicación detallada de lo que hace la herramienta y cuándo usarla
+* **`inputSchema`**: Un JSON Schema que define los parámetros de entrada esperados, permitiendo validación de tipos y proporcionando documentación clara sobre parámetros requeridos y opcionales
 
-    Cada objeto de herramienta en la respuesta incluye varios campos clave:
+#### Cómo funciona esto en aplicaciones de IA
 
-    * **`name`**: Un identificador único para la herramienta dentro del espacio de nombres del servidor. Sirve como clave primaria para la ejecución de la herramienta y debería seguir un patrón de nombres claro (p. ej., `calculator_arithmetic` en lugar de solo `calculate`)
-    * **`title`**: Un nombre legible por humanos que los clientes pueden mostrar a los usuarios
-    * **`description`**: Explicación detallada de lo que hace la herramienta y cuándo usarla
-    * **`inputSchema`**: Un JSON Schema que define los parámetros de entrada esperados, permitiendo validación de tipos y proporcionando documentación clara sobre parámetros requeridos y opcionales
-
-    #### Cómo funciona esto en aplicaciones de IA
-
-    La aplicación de IA recupera las herramientas disponibles de todos los servidores MCP conectados y las combina en un registro unificado de herramientas que el modelo de lenguaje puede consultar. Esto permite al LLM entender qué acciones puede ejecutar y generar automáticamente las llamadas a herramientas apropiadas durante las conversaciones.
+La aplicación de IA recupera las herramientas disponibles de todos los servidores MCP conectados y las combina en un registro unificado de herramientas que el modelo de lenguaje puede consultar. Esto permite al LLM entender qué acciones puede ejecutar y generar automáticamente las llamadas a herramientas apropiadas durante las conversaciones.
 
     **Pseudo-code for AI application tool discovery**
     ```python
@@ -377,11 +381,11 @@ En este ejemplo, la negociación de capacidades demuestra cómo se declaran los 
 
     La respuesta demuestra el sistema de contenido flexible de MCP:
 
-    1. **Arreglo `content`**: Las respuestas de las herramientas devuelven un arreglo de objetos de contenido, lo que permite respuestas ricas y en múltiples formatos (texto, imágenes, recursos, etc.)
+    4. **Arreglo `content`**: Las respuestas de las herramientas devuelven un arreglo de objetos de contenido, lo que permite respuestas ricas y en múltiples formatos (texto, imágenes, recursos, etc.)
 
-    2. **Tipos de contenido**: Cada objeto de contenido tiene un campo `type`. En este ejemplo, `"type": "text"` indica contenido en texto plano, pero MCP admite varios tipos de contenido según el caso de uso.
+    5. **Tipos de contenido**: Cada objeto de contenido tiene un campo `type`. En este ejemplo, `"type": "text"` indica contenido en texto plano, pero MCP admite varios tipos de contenido según el caso de uso.
 
-    3. **Salida estructurada**: La respuesta proporciona información accionable que la aplicación de IA puede usar como contexto para las interacciones con el modelo de lenguaje.
+    6. **Salida estructurada**: La respuesta proporciona información accionable que la aplicación de IA puede usar como contexto para las interacciones con el modelo de lenguaje.
 
     Este patrón de ejecución permite a las aplicaciones de IA invocar dinámicamente la funcionalidad del servidor y recibir respuestas estructuradas que pueden integrarse en las conversaciones con los modelos de lenguaje.
 
