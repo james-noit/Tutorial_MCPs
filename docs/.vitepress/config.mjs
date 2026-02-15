@@ -9,6 +9,7 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
+      { text: '¿Quieres apoyar a tutorialMCP? Invítame a un café ☕', link: 'https://www.buymeacoffee.com/jamesnoitt' }
     ],
 
     sidebar: [
