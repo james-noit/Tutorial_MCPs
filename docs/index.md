@@ -1,16 +1,12 @@
-Obtenido de [modelcontexprotocol](https://modelcontextprotocol.io/docs/getting-started/intro)
-
 # ¿Qué es el Model Context Protocol (MCP)?
 
 MCP (Model Context Protocol) es un estándar de código abierto para conectar aplicaciones de IA con sistemas externos.
 
+<InteractiveDiagram />
+
 Con MCP, aplicaciones de IA como Claude o ChatGPT pueden conectarse a fuentes de datos (por ejemplo, archivos locales, bases de datos), herramientas (por ejemplo, motores de búsqueda, calculadoras) y flujos de trabajo (por ejemplo, prompts especializados), lo que les permite acceder a información clave y ejecutar tareas.
 
 Piensa en MCP como un puerto USB-C para aplicaciones de IA: así como USB-C ofrece una forma estandarizada de conectar dispositivos electrónicos, MCP ofrece una forma estandarizada de conectar aplicaciones de IA con sistemas externos.
-
-<Frame>
-  <img src="https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=35268aa0ad50b8c385913810e7604550" data-og-width="3840" width="3840" data-og-height="1500" height="1500" data-path="images/mcp-simple-diagram.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=280&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=0cea440365b03c2f2a299b0104375b8b 280w, https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=560&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=2391513484df96fa7203739dae5e53b0 560w, https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=840&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=96f5e553bee1051dc882db6c832b15bc 840w, https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=1100&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=341b88d6308188ab06bf05748c80a494 1100w, https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=1650&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=a131a609c7b6a70f342f493bbad57fcb 1650w, https://mintcdn.com/mcp/bEUxYpZqie0DsluH/images/mcp-simple-diagram.png?w=2500&fit=max&auto=format&n=bEUxYpZqie0DsluH&q=85&s=dc4ab238184b6c70e06e871681c921c5 2500w" />
-</Frame>
 
 ## ¿Qué puede permitir MCP?
 
